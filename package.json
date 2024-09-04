@@ -1,0 +1,32 @@
+{
+  "name": "vsx-downloader",
+  "publisher": "vgulyy",
+  "displayName": "VSX binary downloader",
+  "description": "VSX binary downloader",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vitaliy-guliy/vsx-downloader"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/main.js",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build-vsix": "vsce package",
+    "clean": "rm -rf ./out && rm -rf node_modules",
+    "build": "npm install && npm run compile"
+  },
+  
+  "dependencies": {
+    "reflect-metadata": "^0.2.2",
+    "axios": "^1.7.4"
+  },
+
+  "devDependencies": {
+    "@types/node": "16.x",
+    "typescript": "^5.4.5"
+  }
+}
