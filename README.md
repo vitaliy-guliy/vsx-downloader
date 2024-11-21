@@ -1,2 +1,2 @@
 # vsx-downloader
-Helps to download a compatible extension binary from VSX registry
+A tool to download compatible extension version from the registry
