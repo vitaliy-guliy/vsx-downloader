@@ -1,2 +1,2 @@
 # vsx-downloader
-A tool to download compatible extension version from the registry
+A tool to fetch the list of available extension versions from the registry
