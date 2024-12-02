@@ -1,17 +1,18 @@
 import 'reflect-metadata';
 
-import * as service from './extension-servce'; 
+import * as service from './extension-servce';
+import { getExtensionFullName, getMaximumAmountOfVisibleVersions, getVSCodeTarget } from './command-line';
 
 export class Main {
 
   getExtensionIdentifier(extensionFullName: string, searchResult: service.SearchResult): string {
-    console.log(`> getting extension identifier for [${extensionFullName}]`);
+    // console.log(`> getting extension identifier for [${extensionFullName}]`);
   
     for (const e of searchResult.extensions) {
-      console.log(`> found extension ${e.extensionName}`);
+      // console.log(`> found extension ${e.extensionName}`);
 
       if (e.publisher && `${e.publisher.publisherName}.${e.extensionName}` === extensionFullName) {
-        console.log(`  > returning extenion ID ${e.extensionId}`);
+        // console.log(`  > returning extenion ID ${e.extensionId}`);
         return e.extensionId;
       }
 
@@ -27,25 +28,6 @@ export class Main {
     }
   
     throw new Error(`Unable to take extension identifier for ${extensionFullName}`);
-  }
-
-  /**
-   * Visual Studio Code version should be specified via command line argument
-   * target=1.91.0
-   */
-  getVSCodeTarget(): string {
-    const prefix = 'target=';
-    for (const arg of process.argv) {
-      if (arg.startsWith(prefix)) {
-        const value = arg.substring('target='.length);
-        console.log(`> returning vscode version [${value}]`);
-        return value;
-      }
-    }
-
-    // 1.92.0 is on Developer Sandbox
-
-    throw new Error('Visual Studio Code version is not specified as command line argument (e.g. target=1.91.0).');
   }
 
   /**
@@ -77,49 +59,79 @@ export class Main {
     throw new Error('Wrong version definition');
   }
 
+  column(value: string, width: number): string {
+    while (value.length < width) {
+      value += ' ';
+    }
+
+    return value;
+  }
+
   /**
    * VSCode marketplace uri can be taken fere https://github.com/microsoft/vscode/commit/b00945fc8c79f6db74b280ef53eba060ed9a1388
    * 
    * @returns true if success
    */
   async run(): Promise<boolean> {
+    console.log('');
     console.log('> VSX Downloader');
 
     try {
-      const vscodeVersion = this.getVSCodeTarget();
-      console.log(`> got target [${vscodeVersion}]`);
-
-      const extensionFullName = 'GitHub.copilot-chat';
+      // const extensionFullName = 'GitHub.copilot-chat';
       // const extensionFullName = 'GitHub.copilot';
+
+      const extensionFullName = getExtensionFullName();
+      console.log(`> extension full name: ${extensionFullName}`);
+      if (!extensionFullName) {
+        console.error('Visual Studio Code extension is not specified as command line argument (e.g. extension=redhat.vscode-yaml).');
+        return false;
+      }
+
+      // const vscodeVersion = getVSCodeTarget();
+      // console.log(`> got target [${vscodeVersion}]`);
+
+      const limit = getMaximumAmountOfVisibleVersions();
+      console.log(`> maximum amount of visible versions: ${limit}`);
 
       const searchResult = await service.search(extensionFullName);
 
       const extensionIdentifier = this.getExtensionIdentifier(extensionFullName, searchResult);
-      console.log(`> got extension identifier ${extensionIdentifier}`);
+      console.log(`> extension identifier ${extensionIdentifier}`);
       
       const getVersionsResult = await service.getVersions(extensionIdentifier);
       if (getVersionsResult.extensions.length !== 1) {
         throw new Error(`Failure to get versions for ${extensionIdentifier}`);
       }
-      
+
       const extenson = getVersionsResult.extensions[0];
       console.log(`> verions: ${extenson.versions.length}`);
+      console.log('');
       
-      const compatibleVersions: service.Version[] = [];
+      // const compatibleVersions: service.Version[] = [];
 
+      let count = 0;
       for (const version of extenson.versions) {
-        
-        const versionTarget = this.getVersionTarget(version);
-        console.log(`> version ${version.version}   > target ${versionTarget}`);
-        
-        if (this.fitVersion(versionTarget, vscodeVersion)) {
-          compatibleVersions.push(version);
+        const columnVersion = this.column(`version: ${version.version}`, 32);
+        const columnTarget = this.column(`target: ${this.getVersionTarget(version)}`, 32);
+        const columnLastUpdated = this.column(`updated: ${version.lastUpdated}`, 32);
+
+        console.log(`${columnVersion}${columnTarget}${columnLastUpdated}`);
+
+        count++;
+        if (limit && count === limit) {
+          break;
         }
+        
+        // if (this.fitVersion(versionTarget, vscodeVersion)) {
+        //   compatibleVersions.push(version);
+        // }
       }
 
-      console.log('Summary:');
-      console.log(`  Versions: ${extenson.versions.length}`);
-      console.log(`  Compatibe versions: ${compatibleVersions.length}`);
+      // console.log('Summary:');
+      // console.log(`  Versions: ${extenson.versions.length}`);
+      // console.log(`  Compatibe versions: ${compatibleVersions.length}`);
+
+      console.log('');
 
     } catch (err) {
       console.error(err);

@@ -80,10 +80,13 @@ export async function search(extensionName: string): Promise<SearchResult> {
   const data = filters.search(extensionName);
 
   const response = await request(data);
+  if (response.status !== 200) {
+    throw new Error(`Failed to search for ${extensionName}`);
+  }
 
   const searchResults = response.data;
   if (searchResults.results.length < 1) {
-    throw new Error(`Unable to perform searching by extension name ${extensionName}`);
+    throw new Error(`Failed to search for ${extensionName}`);
   }
 
   return searchResults.results[0];
